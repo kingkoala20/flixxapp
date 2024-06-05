@@ -7,7 +7,6 @@ const global = {
 async function displayPopularMovies() {
   const { results } = await fetchAPIData('/movie/popular');
   const popularMoviesContainer = document.querySelector('#popular-movies');
-  console.log(results);
   results.forEach((movie) => {
     const div = document.createElement('div');
     div.classList.add('card');
@@ -60,7 +59,7 @@ async function displayPopularMovies() {
 async function displayPopularShows() {
   const { results } = await fetchAPIData('/tv/popular');
   const popularMoviesContainer = document.querySelector('#popular-shows');
-  console.log(results);
+
   results.forEach((show) => {
     const div = document.createElement('div');
     div.classList.add('card');
@@ -310,20 +309,28 @@ async function displayShowDetails() {
             <ul class="list-group">
               ${show.genres.map((genre) => `<li>${genre.name}</li>`).join('')}
             </ul>
-            <a href="${show.homepage}" target="_blank" class="btn">Visit Show Homepage</a>
+            <a href="${
+              show.homepage
+            }" target="_blank" class="btn">Visit Show Homepage</a>
           </div>
         </div>
         <div class="details-bottom">
           <h2>Show Info</h2>
           <ul>
-            <li><span class="text-secondary">Number Of Episodes:</span> ${show.number_of_episodes}</li>
+            <li><span class="text-secondary">Number Of Episodes:</span> ${
+              show.number_of_episodes
+            }</li>
             <li>
-              <span class="text-secondary">Last Episode To Air:</span> ${show.last_episode_to_air.name}
+              <span class="text-secondary">Last Episode To Air:</span> ${
+                show.last_episode_to_air.name
+              }
             </li>
             <li><span class="text-secondary">Status:</span> ${show.status}</li>
           </ul>
           <h4>Production Companies</h4>
-          <div class="list-group">${show.production_companies.map((company) => company.name).join(', ')}</div>
+          <div class="list-group">${show.production_companies
+            .map((company) => company.name)
+            .join(', ')}</div>
         </div>`;
 
   document.querySelector('#show-details').appendChild(div);
@@ -351,6 +358,55 @@ function displayBackgroundImage(type, path) {
     default:
       document.querySelector('#show-details').appendChild(overlayDiv);
   }
+}
+
+// Display Slider Movies
+async function displaySlider() {
+  const { results } = await fetchAPIData('/movie/now_playing');
+  console.log(results);
+  results.forEach((movie) => {
+    const div = document.createElement('div');
+    div.classList.add('swiper-slide');
+
+    div.innerHTML = `
+          <a href="movie-details.html?id=${movie.id}">
+            <img src="https://image.tmdb.org/t/p/w500${
+              movie.poster_path
+            }" alt="${movie.title}" />
+          </a>
+          <h4 class="swiper-rating">
+            <i class="fas fa-star text-secondary"></i> ${movie.vote_average.toFixed(
+              1
+            )} / 10
+          </h4>
+        `;
+    document.querySelector('.swiper-wrapper').appendChild(div);
+  });
+  initSwiper();
+}
+
+function initSwiper() {
+  const swiper = new Swiper('.swiper', {
+    slidesPerView: 1,
+    spaceBetwen: 30,
+    freeMode: true,
+    loop: true,
+    autoplay: {
+      delay: 4000,
+      disableOnInteraction: false,
+    },
+    breakpoints: {
+      500: {
+        slidesPerView: 2,
+      },
+      700: {
+        slidesPerView: 3,
+      },
+      1200: {
+        slidesPerView: 4,
+      },
+    },
+  });
 }
 
 async function fetchAPIData(endpoint) {
@@ -391,6 +447,7 @@ function init() {
     case '/':
     case '/index.html':
       displayPopularMovies();
+      displaySlider();
       break;
     case '/shows.html':
       displayPopularShows();
