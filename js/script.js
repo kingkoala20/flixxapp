@@ -1,6 +1,16 @@
 /* Page Routing */
 const global = {
   currentPage: window.location.pathname,
+  search: {
+    term: '',
+    type: '',
+    page: 1,
+    totalPages: 1,
+  },
+  api: {
+    apiKey: '10a44ad78a6b570375648f61a7eb8b8a', // todo: transfer to backend later
+    apiURL: 'https://api.themoviedb.org/3',
+  },
 };
 
 // Display 20 popular movies
@@ -237,7 +247,7 @@ async function dispayMovieDetails() {
   liBottomHeading3.classList.add('text-secondary');
   liBottom3.appendChild(liBottomHeading3);
   const liBottomText3 = document.createTextNode(
-    `${USDollar.format(movie.runtime)}`
+    `${movie.runtime} minutes`
   );
   liBottom3.appendChild(liBottomText3);
   ulBottom.appendChild(liBottom3);
@@ -360,6 +370,58 @@ function displayBackgroundImage(type, path) {
   }
 }
 
+// Search Movies/Shows
+async function search() {
+  const queryString = window.location.search;
+  const urlParams = new URLSearchParams(queryString);
+
+  global.search.type = urlParams.get('type');
+  global.search.term = urlParams.get('search-term');
+
+  if (global.search.term !== '' && global.search.term !== null) {
+    const { results, total_pages, page } = await searchAPIData();
+
+    if (results.length === 0) {
+      showAlert('No results found');
+      return;
+    }
+    console.log(results);
+
+    displaySearchResults(results);
+    document.querySelector('#search-term').value = '';
+  } else {
+    showAlert('Please enter a search term');
+  }
+}
+
+function displaySearchResults(results) {
+  results.forEach((result) => {
+    const div = document.createElement('div');
+    div.classList.add('card');
+    div.innerHTML = `
+            <div class="card">
+                <a href="/${global.search.type}-details.html?id=${result.id}">
+                    <img src=${
+                      result.poster_path
+                        ? `https://image.tmdb.org/t/p/w500${result.poster_path}`
+                        : 'images/no-image.jpg'
+                    } class="card-img-top" alt="${
+      global.search.type === 'movie' ? result.title : result.name
+    }">
+                </a>
+                <div class="card-body">
+                    <h5 class="card-title">${global.search.type === 'movie' ? result.title : result.name}</h5>
+                    <p class="card-text">
+                        <small class="text-muted">Release: ${global.search.type === 'movie' ? result.release_date : result.first_air_date}</small>
+                    </p>
+                </div>
+            </div>
+        `;
+
+    document.querySelector('#search-results').appendChild(div)
+  });
+}
+
 // Display Slider Movies
 async function displaySlider() {
   const { results } = await fetchAPIData('/movie/now_playing');
@@ -410,13 +472,27 @@ function initSwiper() {
 }
 
 async function fetchAPIData(endpoint) {
-  const API_KEY = '10a44ad78a6b570375648f61a7eb8b8a'; // todo: transfer to backend later
-  const API_URL = 'https://api.themoviedb.org/3';
+  const API_KEY = global.api.apiKey;
+  const API_URL = global.api.apiURL;
 
   showSpinner();
 
   const response = await fetch(
     `${API_URL}${endpoint}?api_key=${API_KEY}&language=en_US`
+  );
+  hideSpinner();
+  return await response.json();
+}
+
+async function searchAPIData(endpoint) {
+  const API_KEY = global.api.apiKey;
+  const API_URL = global.api.apiURL;
+
+  showSpinner();
+
+  const response = await fetch(
+    `${API_URL}/search/${global.search.type}?api_key=${API_KEY}&
+    language=en_US&query=${global.search.term}`
   );
   hideSpinner();
   return await response.json();
@@ -441,6 +517,16 @@ function highlightActiveLink() {
   });
 }
 
+// Show Alert
+function showAlert(message, className = 'error') {
+  const alertEl = document.createElement('div');
+  alertEl.classList.add('alert', className);
+  alertEl.appendChild(document.createTextNode(message));
+  document.querySelector('#alert').appendChild(alertEl);
+
+  setTimeout(() => alertEl.remove(), 3000);
+}
+
 /* Init App */
 function init() {
   switch (global.currentPage) {
@@ -459,6 +545,7 @@ function init() {
       displayShowDetails();
       break;
     case '/search.html':
+      search();
       console.log('Search');
       break;
   }
